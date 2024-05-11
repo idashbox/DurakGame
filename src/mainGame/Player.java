@@ -27,15 +27,12 @@ public class  Player {
         this.history = history;
     }
     public List<String> displayHand() {
-        System.out.println("Карты в руке игрока " + name + ":");
         history.add("Карты в руке игрока " + name);
         for (RenderedCard card : hand) {
-            System.out.print(card.toColorString());
             history.add(card.toString());
             card.setVisible(true);
             card.setImage();
         }
-        System.out.println();
         return history;
     }
     public void receiveCard(RenderedCard card) {

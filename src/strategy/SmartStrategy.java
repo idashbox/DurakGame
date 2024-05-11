@@ -21,15 +21,12 @@ public class SmartStrategy implements IStrategy {
         if (table.getDeck().getCards().isEmpty()){
             List <RenderedCard> hhh = new ArrayList<>();
             hhh.addAll(defPlayer.getHand());
-            System.out.println("карты противника "+ hhh.size());
             switch (table.players.size()){
                 case 2:
                     if(me.getHand().size()==1){
-                        System.out.println("у меня одна карта ее и выброшу");
                         return me.getHand().remove(0);
                     }
                     if(hhh.size()==1){
-                        System.out.println("у него одна карта попробую закдиать его");
                         for(RenderedCard j:me.getHand()){
                             if(HelpingMethods.canBeatCard(hhh.get(0),j,trumpSuit)){
                                 me.getHand().remove(j);
@@ -43,7 +40,6 @@ public class SmartStrategy implements IStrategy {
                             for(RenderedCard card2:hhh){
                                 if(!HelpingMethods.canBeatCard(card2,card1,trumpSuit)){
                                     me.getHand().remove(card1);
-                                    System.out.println("у меня две  карты, выброшу по возможности ту, которую он не побьет.");
                                     return card1;
                                 }
                             }
@@ -83,7 +79,6 @@ public class SmartStrategy implements IStrategy {
                                         }
                                     }
                                     if (flag){
-                                        System.out.println("я кину карту " + card1 + "чтобы вышла карта" + card2 +" и кину карту "+ card111.toString() + " которую он побить не сможет");
                                         me.getHand().remove(card1);
                                         return card1;
                                     }else{
@@ -98,13 +93,12 @@ public class SmartStrategy implements IStrategy {
                                                 for(RenderedCard card222:othersAt2){
                                                     if(HelpingMethods.canBeatCard(card222,card1111,trumpSuit)
                                                             && card1111!=card111 && card1111!=card1 && card222!=card2
-                                                                && card121!=card222){
+                                                            && card121!=card222){
                                                         flag2 = false;
                                                         break;
                                                     }
                                                 }
                                                 if(flag2){
-                                                    System.out.println("я кину карту " + card1 + "чтобы вышли карты" + card2 + card121 + card111 + " и кину карту " + card1111.toString() + " которую он побить не сможет");
                                                     me.getHand().remove(card1);
                                                     return card1;
                                                 }
@@ -151,7 +145,6 @@ public class SmartStrategy implements IStrategy {
                 return card;
             }
             if (me.getHand().size() == 1){
-                System.out.println("подбрасываю и выхожу");
                 me.getHand().remove(card);
                 return card;
             }
@@ -179,7 +172,6 @@ public class SmartStrategy implements IStrategy {
                 return true;
             }
             if (me.getHand().size() == 1){
-                System.out.println("подбрасываю и выхожу");
                 return true;
             }
         }

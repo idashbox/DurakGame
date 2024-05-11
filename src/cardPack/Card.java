@@ -10,11 +10,6 @@ import static cardPack.Suit.*;
 import static cardPack.Suit.SPADES;
 
 public class Card extends Canvas implements MouseListener {
-    public static final String ANSI_RED = "\u001B[31m";
-    public static final String ANSI_BLACK = "\u001B[30m";
-    public static final String ANSI_GREEN = "\u001B[32m";
-    public static final String ANSI_YELLOW = "\u001B[33m";
-    public static final String ANSI_RESET = "\u001B[0m";
     private final Suit suit;
     private final Rank rank;
     protected boolean visible;
@@ -32,45 +27,6 @@ public class Card extends Canvas implements MouseListener {
     }
     public void setVisible(boolean v) {
         visible = v;
-    }
-    public String toColorString() {
-        String result = "";
-        switch (suit) {
-            case DIAMONDS -> {
-                result += ANSI_BLACK;
-                result += "♦";
-            }
-            case SPADES -> {
-                result += ANSI_GREEN;
-                result += "♠";
-            }
-            case CLUBS -> {
-                result += ANSI_YELLOW;
-                result += "♣";
-            }
-            case HEARTS -> {
-                result += ANSI_RED;
-                result += "♥";
-            }
-            default -> {
-            }
-        }
-        switch (rank) {
-            case SIX -> result += "6";
-            case SEVEN -> result += "7";
-            case EIGHT -> result += "8";
-            case NINE -> result += "9";
-            case TEN -> result += "10";
-            case JACK -> result += "J";
-            case QUEEN -> result += "Q";
-            case KING -> result += "K";
-            case ACE -> result += "A";
-            default -> {
-            }
-        }
-        result+=ANSI_RESET;
-        result+=" ";
-        return result;
     }
     @Override
     public String toString() {
@@ -159,4 +115,3 @@ public class Card extends Canvas implements MouseListener {
 
     }
 }
-

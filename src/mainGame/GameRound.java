@@ -4,120 +4,111 @@ import cardPack.RenderedCard;
 import java.util.ArrayList;
 import java.util.List;
 import static mainGame.HelpingMethods.sortHand;
-public class GameRound {
-    public List<RenderedCard> cardsIn;
-    public List<RenderedCard> cardsForAttack = new ArrayList<>();
-    private final List<Player> players;
-    private final Table table;
-    private final Player attackPlayer;
-    private final Player defPlayer;
-    private boolean status;
-    private final int countDefCards;
-    private int countThrowingCards;
-    private final List<String> history;
-    public GameRound(List<Player> players, Table table, Player attackPlayer, Player defPlayer, List<String> history) {
-        this.players = players;
-        this.table = table;
-        this.attackPlayer = attackPlayer;
-        this.defPlayer = defPlayer;
-        this.status = true;
-        this.countDefCards = defPlayer.getHand().size();
-        this.history = history;
-    }
-    public List<RenderedCard> getCardsForAttack() {
-        return cardsForAttack;
-    }
-    public Player getDefPlayer() {
-        return defPlayer;
-    }
-    public boolean isStatus() {
-        return status;
-    }
-    public List<String> play() {
-        cardsIn = new ArrayList<>();
-        RenderedCard attackCard;
-        attackCard = attackPlayer.getStrategy().attack(attackPlayer, defPlayer,table); // Ход атакующего игрока
-        System.out.println(attackPlayer.getName() + " атаковала " + attackCard.toColorString());
-        history.add(attackPlayer.getName() + " атаковала " + attackCard);
-        cardsIn.add(attackCard); // Карта атаки заносится в cardsIn
-        cardsForAttack.add(attackCard); // Здесь мы помещаем карту, и отсюда достаем, когда бьем
-        countThrowingCards = 1; //походили одной картой
-        fillMassiveAttack();
+    public class GameRound {
+        public List<RenderedCard> attackingCards;
+        public List<RenderedCard> cardsForNextAttack = new ArrayList<>();
+        private final List<Player> players;
+        private final Table gameTable;
+        private final Player attackingPlayer;
+        private final Player defendingPlayer;
+        private boolean roundIsActive;
+        private final int defenderCardCount;
+        private int additionalCardsCount;
+        private final List<String> gameHistory;
+        public GameRound(List<Player> players, Table table, Player attackingPlaye, Player defendingPlayer, List<String> gameHistory) {
+            this.players = players;
+            this.gameTable = table;
+            this.attackingPlayer = attackingPlaye;
+            this.defendingPlayer = defendingPlayer;
+            this.roundIsActive = true;
+            this.defenderCardCount = defendingPlayer.getHand().size();
+            this.gameHistory = gameHistory;
+        }
+        public List<RenderedCard> getCardsForNextAttack() {
+            return cardsForNextAttack;
+        }
+        public Player getDefendingPlayer() {
+            return defendingPlayer;
+        }
+        public boolean isRoundActive() {
+            return roundIsActive;
+        }
+        public List<String> play() {
+            attackingCards = new ArrayList<>();
+            RenderedCard attackCard;
+            attackCard = attackingPlayer.getStrategy().attack(attackingPlayer, defendingPlayer, gameTable);
+            gameHistory.add(attackingPlayer.getName() + " атаковала " + attackCard);
+            attackingCards.add(attackCard);
+            cardsForNextAttack.add(attackCard);
+            additionalCardsCount = 1;
+            fillMassiveAttack();
 
-        while (true) {
-            cardsForAttack = HelpingMethods.sortHand(cardsForAttack, table.getTrumpCard().getSuit());//сортируем карты и бьем по порядку
-            for (RenderedCard card : cardsForAttack) {
-                RenderedCard defCard = defPlayer.getStrategy().defence(defPlayer, card, table, cardsIn, cardsForAttack);
-                if (defCard != null) {
-                    cardsIn.add(defCard);
-                    System.out.println(defPlayer.getName() + " побилась " + defCard);
-                    history.add(defPlayer.getName() + " побилась " + defCard);
+            while (true) {
+                cardsForNextAttack = HelpingMethods.sortHand(cardsForNextAttack, gameTable.getTrumpCard().getSuit());
+                for (RenderedCard card : cardsForNextAttack) {
+                    RenderedCard defCard = defendingPlayer.getStrategy().defence(defendingPlayer, card, gameTable, attackingCards, cardsForNextAttack);
+                    if (defCard != null) {
+                        attackingCards.add(defCard);
+                        gameHistory.add(defendingPlayer.getName() + " побилась " + defCard);
+                    } else {
+                        roundIsActive = false;
+                        defendingPlayer.takeCards(attackingCards);
+                        cardsForNextAttack.clear();
+                        gameHistory.add(defendingPlayer.getName() + " затянула");
+                        break;
+                    }
+                }
+                if (roundIsActive) {
+                    cardsForNextAttack.clear();
                 } else {
-                    status = false;
-                    defPlayer.takeCards(cardsIn);
-                    cardsForAttack.clear();
-                    System.out.println(defPlayer.getName() + " затянула");
-                    history.add(defPlayer.getName() + " затянула");
-                    System.out.println();
+                    break;
+                }
+                if (isRoundOver()) {
+                    gameTable.cardsOut.addAll(attackingCards);
+                    for(Player pl:players){
+                        pl.setHand(sortHand(pl.getHand(), gameTable.getTrumpCard().getSuit()));
+                    }
+                    gameHistory.add("Карт вышло :" + gameTable.cardsOut.size());
+                    gameHistory.add("Карт в колоде " + gameTable.getDeck().getCards().size());
+                    break;
+                } else {
+                    fillMassiveAttack();
+                }
+            }
+            return gameHistory;
+        }
+        private void fillMassiveAttack() {
+            boolean s = attackingPlayer.getStrategy().areThrowCard(attackingPlayer, attackingCards, players, gameTable.cardsOut);
+            while (s && defenderCardCount > additionalCardsCount) {
+                RenderedCard aaCard = attackingPlayer.getStrategy().throwCard(attackingPlayer, attackingCards, players, gameTable.cardsOut);
+                attackingCards.add(aaCard);
+                cardsForNextAttack.add(aaCard);
+                additionalCardsCount++;
+                gameHistory.add(attackingPlayer.getName() + " подбросила " + aaCard);
+                s = attackingPlayer.getStrategy().areThrowCard(attackingPlayer, attackingCards, players, gameTable.cardsOut);
+            }
+            for (Player player : players) {
+                if (player != defendingPlayer && player != attackingPlayer) {
+                    s = player.getStrategy().areThrowCard(player, attackingCards, players, gameTable.cardsOut);
+                    while (s && defenderCardCount > additionalCardsCount) {
+                        RenderedCard aCard = player.getStrategy().throwCard(player, attackingCards, players, gameTable.cardsOut);
+                        attackingCards.add(aCard);
+                        cardsForNextAttack.add(aCard);
+                        additionalCardsCount++;
+                        gameHistory.add(player.getName() + " подбросила " + aCard);
+                        s = player.getStrategy().areThrowCard(player, attackingCards, players, gameTable.cardsOut);
+                    }
+                }
+            }
+        }
+        private boolean isRoundOver() {
+            boolean flag = true;
+            for (Player player : players) {
+                if (player.getStrategy().areThrowCard(player, attackingCards, players, gameTable.cardsOut) && player != defendingPlayer) {
+                    flag = false;
                     break;
                 }
             }
-            if (status) {
-                cardsForAttack.clear();
-            } else {
-                break;
-            }
-            if (isRoundOver()) {//обнуление необходимого для следующей итерации
-                table.cardsOut.addAll(cardsIn);
-                for(Player pl:players){
-                    pl.setHand(sortHand(pl.getHand(),table.getTrumpCard().getSuit()));
-                }
-                System.out.println("Карт вышло :" + table.cardsOut.size());
-                history.add("Карт вышло :" + table.cardsOut.size());
-                System.out.println("Карт в колоде " + table.getDeck().getCards().size());
-                history.add("Карт в колоде " + table.getDeck().getCards().size());
-                System.out.println();
-                break;
-            } else {
-                fillMassiveAttack();
-            }
-        }
-        return history;
-    }
-    private void fillMassiveAttack() {
-        boolean s = attackPlayer.getStrategy().areThrowCard(attackPlayer, cardsIn, players,table.cardsOut);
-        while (s && countDefCards > countThrowingCards) {
-            RenderedCard aaCard = attackPlayer.getStrategy().throwCard(attackPlayer, cardsIn, players, table.cardsOut);
-            cardsIn.add(aaCard);
-            cardsForAttack.add(aaCard);
-            countThrowingCards++;
-            System.out.println(attackPlayer.getName() + " подбросила " + aaCard.toColorString());
-            history.add(attackPlayer.getName() + " подбросила " + aaCard);
-            s = attackPlayer.getStrategy().areThrowCard(attackPlayer, cardsIn, players,table.cardsOut);
-        }
-        for (Player player : players) {
-            if (player != defPlayer && player != attackPlayer) { // Убедиться, что игрок не является защищающимся или атакующим
-                s = player.getStrategy().areThrowCard(player, cardsIn, players, table.cardsOut);
-                while (s && countDefCards > countThrowingCards) {
-                    RenderedCard aCard = player.getStrategy().throwCard(player, cardsIn, players, table.cardsOut);
-                    cardsIn.add(aCard);
-                    cardsForAttack.add(aCard);
-                    countThrowingCards++;
-                    System.out.println(player.getName() + " подбросила " + aCard.toColorString());
-                    history.add(player.getName() + " подбросила " + aCard);
-                    s = player.getStrategy().areThrowCard(player, cardsIn, players, table.cardsOut);
-                }
-            }
+            return defendingPlayer.getHand().size() == 0 || (!attackingPlayer.getStrategy().areThrowCard(attackingPlayer, attackingCards, players, gameTable.cardsOut) && flag);
         }
     }
-    private boolean isRoundOver() {
-        boolean flag = true;
-        for (Player player : players) {
-            if (player.getStrategy().areThrowCard(player, cardsIn, players, table.cardsOut) && player != defPlayer) {
-                flag = false;
-                break;
-            }
-        }
-        return defPlayer.getHand().size() == 0 || (!attackPlayer.getStrategy().areThrowCard(attackPlayer, cardsIn, players, table.cardsOut) && flag);
-    }
-}

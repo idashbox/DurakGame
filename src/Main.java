@@ -60,6 +60,13 @@ public class Main extends JFrame{
     private static JSpinner spinner;
     private JPanel spinnerPanel;
     private String[] infoLabelTroughMoves;
+    public Main() {
+        super("Durak");
+        setIconImage(new ImageIcon("picture_data/♥️K.gif").getImage());
+
+        initFrame();
+        setVisible(true);
+    }
 
     private void initFrame() {
         setTitle("Карточная игра");
@@ -99,15 +106,15 @@ public class Main extends JFrame{
         initButtons();
 
     }
-    private void initButtons() {
 
+    private void initButtons() {
         startButton.addActionListener(e -> startGame());
 
         nextButton.addActionListener(e -> {
             if (currentTurnIndex < history.size() - 1) {
                 displayMove(currentTurnIndex);
             }else {
-                System.out.println("Это последний ход! Смотрите предыдущие ходы или начните новую игру!");
+                infoLabel.setText("Это последний ход! Смотрите предыдущие ходы или начните новую игру!");
             }
         });
 
@@ -121,10 +128,34 @@ public class Main extends JFrame{
     public void startGame() {
         history = new ArrayList<>();
         List<Player> players = input();
-        goGame(players);
+        game(players);
         initCards();
 
         setResizable(true);
+        resetAll();
+        displayMove(currentTurnIndex);
+    }
+
+    public static List<Player> input() {
+        numPlayers = (Integer) spinner.getValue();
+        List<Player> players = new ArrayList<>();
+        for (int i = 0; i < numPlayers; i++) {
+            String playerName = names[i];
+            Player currentPlayer = new Player(playerName, history);
+            currentPlayer.setStrategy(new SmartStrategy());
+            players.add(currentPlayer);
+        }
+        return players;
+    }
+    public void game(List<Player> players){
+        Game game = new Game(table, history, cardForAttack, cardForDefence);
+        game.goGame(players);
+        table = game.getTable();
+        history = game.getHistory();
+        cardForAttack = game.getCardForAttack();
+        cardForDefence = game.getCardForDefence();
+    }
+    public void resetAll(){
         updateFrame();
         computerPanel1.removeAll();
         computerPanel2.removeAll();
@@ -137,7 +168,6 @@ public class Main extends JFrame{
         sidePanel.removeAll();
         currentTurnIndex = 0;
         indexForTurnIndexes = 0;
-        displayMove(currentTurnIndex);
     }
 
     private void initCards() {
@@ -161,29 +191,6 @@ public class Main extends JFrame{
         turnIndexes = new int[history.size()];
     }
 
-    public void saveMovesToLists(int turnIndex){
-        for (int i = 0; i < numPlayers; i++){
-            ArrayList<RenderedCard>[] hands = getHandChangesThroughMovesByName(names[i]);
-            hands[turnIndex] = new ArrayList<>(getHandByName(names[i]));
-        }
-        cardForAttackChangesThroughMoves[turnIndex] = new ArrayList<>(cardForAttack);
-        cardForDefenceChangesThroughMoves[turnIndex] = new ArrayList<>(cardForDefence);
-        infoLabelTroughMoves[turnIndex] = infoLabel.getText();
-    }
-
-    public void setMovesFromLists(int turnIndex){
-        for (int i = 0; i < numPlayers; i++){
-            ArrayList<RenderedCard> hand = getHandByName(names[i]);
-            hand.clear();
-            ArrayList<RenderedCard>[] handChanges = getHandChangesThroughMovesByName(names[i]);
-            hand.addAll(handChanges[turnIndex]);
-        }
-        cardForAttack.clear();
-        cardForDefence.clear();
-        cardForAttack.addAll(cardForAttackChangesThroughMoves[turnIndex]);
-        cardForDefence.addAll(cardForDefenceChangesThroughMoves[turnIndex]);
-        infoLabel.setText(infoLabelTroughMoves[turnIndex]);
-    }
     private void displayMove(int turnIndex) {
 
         String moveInfo = history.get(turnIndex);
@@ -218,8 +225,31 @@ public class Main extends JFrame{
             revalidate();
             repaint();
         }else{
-            System.out.println("Это самый первый ход! Смотрите следующие ходы!");
+            infoLabel.setText("Это самый первый ход! Смотрите следующие ходы!");
         }
+    }
+    public void saveMovesToLists(int turnIndex){
+        for (int i = 0; i < numPlayers; i++){
+            ArrayList<RenderedCard>[] hands = getHandChangesThroughMovesByName(names[i]);
+            hands[turnIndex] = new ArrayList<>(getHandByName(names[i]));
+        }
+        cardForAttackChangesThroughMoves[turnIndex] = new ArrayList<>(cardForAttack);
+        cardForDefenceChangesThroughMoves[turnIndex] = new ArrayList<>(cardForDefence);
+        infoLabelTroughMoves[turnIndex] = infoLabel.getText();
+    }
+
+    public void setMovesFromLists(int turnIndex){
+        for (int i = 0; i < numPlayers; i++){
+            ArrayList<RenderedCard> hand = getHandByName(names[i]);
+            hand.clear();
+            ArrayList<RenderedCard>[] handChanges = getHandChangesThroughMovesByName(names[i]);
+            hand.addAll(handChanges[turnIndex]);
+        }
+        cardForAttack.clear();
+        cardForDefence.clear();
+        cardForAttack.addAll(cardForAttackChangesThroughMoves[turnIndex]);
+        cardForDefence.addAll(cardForDefenceChangesThroughMoves[turnIndex]);
+        infoLabel.setText(infoLabelTroughMoves[turnIndex]);
     }
 
     private void parseAndDisplay(String moveInfo, ArrayList<String> hand) {
@@ -264,7 +294,6 @@ public class Main extends JFrame{
         repaint();
     }
 
-
     public void displayCards(String text, ArrayList<String> hand){
         String playerName = text.split(" ")[4];
 
@@ -277,7 +306,6 @@ public class Main extends JFrame{
             }
         }
     }
-
 
     private void updateDeckInfo(String text) {
         String[] parts = text.split(" ");
@@ -327,9 +355,9 @@ public class Main extends JFrame{
         removeCard(playerName, card);
     }
 
-private void updateDeckEmpty(String text) {
-    infoLabel.setText(text);
-}
+    private void updateDeckEmpty(String text) {
+        infoLabel.setText(text);
+    }
 
     private void updateCardsOut() {
         cardForAttack.clear();
@@ -361,7 +389,6 @@ private void updateDeckEmpty(String text) {
             }
         }
     }
-
     private JPanel getPanelByName(String playerName) {
         return switch (playerName) {
             case "DARIA1" -> computerPanel1;
@@ -374,7 +401,7 @@ private void updateDeckEmpty(String text) {
         };
     }
 
-    private ArrayList<RenderedCard> getHandByName(String playerName) {
+    public ArrayList<RenderedCard> getHandByName(String playerName) {
         return switch (playerName) {
             case "DARIA1" -> computerHand1;
             case "LISA2" -> computerHand2;
@@ -385,7 +412,7 @@ private void updateDeckEmpty(String text) {
             default -> null;
         };
     }
-    private ArrayList<RenderedCard>[] getHandChangesThroughMovesByName(String playerName) {
+    public ArrayList<RenderedCard>[] getHandChangesThroughMovesByName(String playerName) {
         return switch (playerName) {
             case "DARIA1" -> computerHandChangesThroughMoves1;
             case "LISA2" -> computerHandChangesThroughMoves2;
@@ -397,7 +424,6 @@ private void updateDeckEmpty(String text) {
         };
     }
 
-
     public void updateFrame() {
         for (int i = 0; i < numPlayers; i++){
             showComputerCards(getPanelByName(names[i]),getHandByName(names[i]));
@@ -408,20 +434,19 @@ private void updateDeckEmpty(String text) {
     protected void showTableCards() {
         tableAttackPanel.removeAll();
         tableDefencePanel.removeAll();
-            if (cardForAttack != null) {
-                for (RenderedCard temp : cardForAttack) {
-                    temp.setVisible(true);
-                    tableAttackPanel.add(temp);
-                }
+        if (cardForAttack != null) {
+            for (RenderedCard temp : cardForAttack) {
+                temp.setVisible(true);
+                tableAttackPanel.add(temp);
             }
-            if (cardForDefence != null){
-                for (RenderedCard temp : cardForDefence) {
-                    temp.setVisible(true);
-                    tableDefencePanel.add(temp);
-                }
+        }
+        if (cardForDefence != null){
+            for (RenderedCard temp : cardForDefence) {
+                temp.setVisible(true);
+                tableDefencePanel.add(temp);
             }
+        }
     }
-
 
     protected void showComputerCards(JPanel computerPanel, ArrayList<RenderedCard> computerHand) {
         computerPanel.removeAll();
@@ -439,136 +464,7 @@ private void updateDeckEmpty(String text) {
         setLocation((d.width - getWidth()) / 2, (d.height - getHeight()) / 2);
         super.setVisible(visible);
     }
-
-    public Main() {
-        super("Durak");
-        setIconImage(new ImageIcon("picture_data/♥K.gif").getImage());
-
-        initFrame();
-        setVisible(true);
-    }
-
-    public void goGame(List<Player> players) {
-        boolean availabilityOfCards = true;
-        List<Player> winners = new ArrayList<>();
-        table = new Table(players);
-        table.dealCards();
-        history = new ArrayList<>();
-        cardForAttack = new ArrayList<>();
-        cardForDefence = new ArrayList<>();
-        for(Player pl : players){
-            System.out.println();
-            history = pl.displayHand();
-            System.out.println(pl.getStrategy().getNameStrategy());
-        }
-        RenderedCard trumpCard = table.getTrumpCard();
-        for (Player p:players){
-            p.getStrategy().setTrumpSuit(trumpCard.getSuit());
-        }
-        System.out.println("Карт в колоде " + table.getDeck().getCards().size());
-        history.add("Карт в колоде " + table.getDeck().getCards().size());
-        System.out.println("Козырная карта: " + trumpCard.toColorString());
-        history.add("Козырная карта: " + trumpCard);
-        Player firstPlayer = determineFirstPlayer(table.getTrumpCard(), players);
-        System.out.println("Первым ходит " + firstPlayer.getName());
-        history.add("Первым ходит " + firstPlayer.getName());
-        int sws = players.indexOf(firstPlayer);
-        while (players.size() > 1) {
-            GameRound gg = new GameRound(players, table, players.get(sws % players.size()), players.get((sws + 1) % players.size()), history);
-            cardForAttack = gg.getCardsForAttack();
-            history = gg.play();
-            if (availabilityOfCards) {
-                System.out.println("Осталось "+ table.getDeck().getCards().size()+" карт в колоде");
-                history.add("Осталось "+ table.getDeck().getCards().size()+" карт в колоде");
-            }
-            for (int i = 0; i < players.size(); i++) {
-                if (availabilityOfCards) {
-                    while (players.get((sws + i) % players.size()).getHand().size()<6) {
-                        if (!table.getDeck().getCards().isEmpty()) {
-                            if(table.getDeck().getCard()==trumpCard){
-                                players.get((sws + i) % players.size()).takeToTakenCards(table.getCard());
-                            }
-                            RenderedCard a = table.getDeck().drawCard();
-                            players.get((sws + i) % players.size()).receiveCard(a);
-                            System.out.println(players.get((sws + i) % players.size()).getName() + " взял карту "+ a.toColorString());
-                            history.add(players.get((sws + i) % players.size()).getName() + " взял карту "+ a);
-                            players.get((sws + i) % players.size()).setHand(HelpingMethods.sortHand(players.get((sws + i) % players.size()).getHand(),trumpCard.getSuit() ));
-                        } else {
-                            availabilityOfCards = false;
-                            System.out.println("Карты кончились " + table.getDeck().getCards().size());
-                            history.add("Карты кончились " + table.getDeck().getCards().size());
-                            break;
-                        }
-                    }
-                } else {
-                    break;
-                }
-            }
-            for (Player pl : players){
-                history = pl.displayHand();
-            }
-            if (gg.isStatus()){
-                sws = players.indexOf(gg.getDefPlayer());
-            }else{
-                sws = (sws+2) % players.size();
-            }
-            for (int i = 0; i < players.size(); i++) {
-                if (players.get(i).getHand().isEmpty()) {
-                    winners.add(players.get(i));
-                    System.out.println(players.get(i).getName() + " вышла");
-                    history.add(players.get(i).getName() + " вышла");
-                    players.remove(i);
-                    i--;
-                }
-            }
-            System.out.println();
-        }
-        for(Player pl :players){
-            List<RenderedCard> d = new ArrayList<>();
-            pl.setHand(d);
-        }
-        System.out.println("Карт вышло: "+ table.cardsOut.size());
-        history.add("Карт вышло: "+ table.cardsOut.size());
-        if(players.size()==1){
-            System.out.println("Проиграл игрок: "+ players.get(0).getName());
-            history.add("Проиграл игрок: "+ players.get(0).getName());
-        }
-        System.out.println("Ничья");
-        history.add("Ничья");
-    }
-    public static Player determineFirstPlayer(RenderedCard trumpCard, List<Player> players) {
-        Player firstPlayer = null;
-        int targetRank = (trumpCard.getRank().ordinal() < 5) ? Integer.MIN_VALUE : Integer.MAX_VALUE;
-        for (Player player : players) {
-            for (RenderedCard card : player.getHand()) {
-                if (card.getSuit() == trumpCard.getSuit()) {
-                    int cardRank = card.getRank().ordinal();
-                    if ((trumpCard.getRank().ordinal() < 5 && cardRank > targetRank) ||
-                            (trumpCard.getRank().ordinal() >= 5 && cardRank < targetRank)) {
-                        targetRank = cardRank;
-                        firstPlayer = player;
-                    }
-                }
-            }
-        }
-        if (firstPlayer == null) {
-            int randomIndex = (int) (Math.random() * players.size());
-            firstPlayer = players.get(randomIndex);
-        }
-        return firstPlayer;
-    }
     public static void main(String[] args) {
         new Main();
-    }
-    public static List<Player> input() {
-        numPlayers = (Integer) spinner.getValue();
-        List<Player> players = new ArrayList<>();
-        for (int i = 0; i < numPlayers; i++) {
-            String playerName = names[i];
-            Player currentPlayer = new Player(playerName, history);
-            currentPlayer.setStrategy(new SmartStrategy());
-            players.add(currentPlayer);
-        }
-        return players;
     }
 }
